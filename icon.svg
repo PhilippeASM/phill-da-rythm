@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Phill da Rythm">
+  <rect width="512" height="512" rx="104" fill="#5b9bd5"/>
+  <circle cx="256" cy="256" r="134" fill="none" stroke="#ffffff" stroke-width="22" opacity="0.5"/>
+  <path d="M256 122 A134 134 0 0 1 390 256" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="48" fill="#ffffff"/>
+</svg>

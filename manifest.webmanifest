@@ -1,0 +1,14 @@
+{
+  "name": "Phill da Rythm — Treino de Ritmo",
+  "short_name": "Phill Rythm",
+  "description": "Treino de inner timing + timers de RNG manip (Treino/Gen3/Gen4/Gen5/Custom).",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#c8dce8",
+  "theme_color": "#5b9bd5",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

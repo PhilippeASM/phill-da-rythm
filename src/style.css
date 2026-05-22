@@ -1,0 +1,624 @@
+
+/* override pra atributo hidden funcionar com display:flex/grid */
+[hidden] { display: none !important; }
+/* ============================================================
+   Treino de Ritmo v1.7 — style.css
+   Portado fielmente do EonTimer (DasAmpharos) com extensões
+   para o painel de Treino (tiers, score, sub-modos A/B).
+   ============================================================ */
+
+*,
+*::before,
+*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #app {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ─── Theme variables (light, do EonTimer) ─── */
+:root {
+  --color-bg-1: #c8dce8;
+  --color-bg-2: #a8c4d8;
+  --color-bg-3: #b0cce0;
+  --color-panel: rgba(255, 255, 255, 0.35);
+  --color-panel-border: rgba(0, 0, 0, 0.15);
+  --color-text: #1a1a1a;
+  --color-text-strong: #111;
+  --color-text-secondary: #444;
+  --color-text-muted: #555;
+  --color-text-faint: #888;
+  --color-input-bg: #fff;
+  --color-input-border: #bbb;
+  --color-input-disabled-bg: #eee;
+  --color-input-disabled-text: #999;
+  --color-input-focus: #5b9bd5;
+  --color-input-focus-shadow: rgba(91,155,213,0.2);
+  --color-btn-bg: #f5f5f5;
+  --color-btn-border: #bbb;
+  --color-btn-text: #333;
+  --color-btn-hover-bg: #e8e8e8;
+  --color-btn-hover-border: #999;
+  --color-btn-active-bg: #ddd;
+  --color-accent: #1a6fb5;
+  --color-accent-bg: #5b9bd5;
+  --color-accent-border: #4a8ac4;
+  --color-accent-hover: #4a8ac4;
+  --color-tab-hover-bg: rgba(255,255,255,0.3);
+  --color-tab-bar-bg: rgba(255,255,255,0.4);
+  --color-dialog-bg: #e8eff5;
+  --color-dialog-border: #aaa;
+  --color-dialog-overlay: rgba(0,0,0,0.35);
+  --color-dialog-divider: rgba(0,0,0,0.12);
+  --color-progress-bg: rgba(0,0,0,0.1);
+  --color-play-bg: rgba(0,0,0,0.08);
+  --color-play-hover: rgba(0,0,0,0.15);
+  --color-play-active: rgba(0,0,0,0.22);
+  --color-settings-hover-bg: rgba(0,0,0,0.08);
+  --color-custom-phase-bg: rgba(255,255,255,0.5);
+  --color-custom-phase-border: rgba(0,0,0,0.12);
+  --color-scroll-border: rgba(0,0,0,0.1);
+  --color-scroll-bg: rgba(255,255,255,0.4);
+  --color-body-bg: #b8cfe0;
+
+  /* extras para o Treino */
+  --tier-hit: #2e8540;
+  --tier-near: #5b9bd5;
+  --tier-miss: #d9a441;
+  --tier-bad:  #d9534f;
+  --tier-ah:   #7a3e8f;
+}
+
+[data-theme='dark'] {
+  --color-bg-1: #1a2332;
+  --color-bg-2: #0f1923;
+  --color-bg-3: #162230;
+  --color-panel: rgba(255,255,255,0.07);
+  --color-panel-border: rgba(255,255,255,0.1);
+  --color-text: #d8dde3;
+  --color-text-strong: #eef1f4;
+  --color-text-secondary: #a0aab4;
+  --color-text-muted: #8090a0;
+  --color-text-faint: #607080;
+  --color-input-bg: rgba(255,255,255,0.07);
+  --color-input-border: rgba(255,255,255,0.15);
+  --color-input-disabled-bg: rgba(255,255,255,0.04);
+  --color-input-disabled-text: #506070;
+  --color-input-focus: #6aafdf;
+  --color-input-focus-shadow: rgba(106,175,223,0.25);
+  --color-btn-bg: rgba(255,255,255,0.08);
+  --color-btn-border: rgba(255,255,255,0.15);
+  --color-btn-text: #c0cad4;
+  --color-btn-hover-bg: rgba(255,255,255,0.14);
+  --color-btn-hover-border: rgba(255,255,255,0.22);
+  --color-btn-active-bg: rgba(255,255,255,0.18);
+  --color-accent: #6aafdf;
+  --color-tab-hover-bg: rgba(255,255,255,0.06);
+  --color-tab-bar-bg: rgba(255,255,255,0.04);
+  --color-dialog-bg: #1c2838;
+  --color-dialog-border: rgba(255,255,255,0.12);
+  --color-dialog-overlay: rgba(0,0,0,0.6);
+  --color-dialog-divider: rgba(255,255,255,0.08);
+  --color-progress-bg: rgba(255,255,255,0.1);
+  --color-play-bg: rgba(255,255,255,0.1);
+  --color-play-hover: rgba(255,255,255,0.18);
+  --color-play-active: rgba(255,255,255,0.25);
+  --color-settings-hover-bg: rgba(255,255,255,0.1);
+  --color-custom-phase-bg: rgba(255,255,255,0.06);
+  --color-custom-phase-border: rgba(255,255,255,0.08);
+  --color-scroll-border: rgba(255,255,255,0.08);
+  --color-scroll-bg: rgba(255,255,255,0.05);
+  --color-body-bg: #0f1923;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--color-body-bg);
+}
+
+/* ─── App shell ─── */
+.app {
+  display: flex;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(135deg,
+    var(--color-bg-1) 0%,
+    var(--color-bg-2) 40%,
+    var(--color-bg-3) 100%);
+  padding: 16px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 600px;
+  min-height: 0;
+  max-height: 100%;
+}
+
+/* ─── Timer / display card ─── */
+.timer-display {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--color-panel);
+  border: 1px solid var(--color-panel-border);
+  border-radius: 6px;
+  padding: 16px 16px 8px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.timer-current-phase {
+  font-family: 'Consolas','Courier New', monospace;
+  font-size: clamp(48px, 12vw, 80px);
+  font-weight: 700;
+  letter-spacing: 4px;
+  line-height: 1;
+  color: var(--color-text-strong);
+  text-align: center;
+}
+
+.timer-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--color-progress-bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.timer-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  width: 100%;
+  transform-origin: left;
+  will-change: transform;
+  background: #5b9bd5;
+}
+.zone-normal   .timer-progress-fill { background: #5b9bd5; }
+.zone-action   .timer-progress-fill { background: #e8a838; }
+.zone-complete .timer-progress-fill { background: #5cb85c; }
+
+.timer-meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: 100%;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.timer-meta > span,
+.timer-info-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.timer-info-label { white-space: nowrap; }
+.mono { font-family: 'Consolas','Courier New', monospace; }
+
+/* footer of display: settings | play | links */
+.timer-display-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 52px;
+}
+.timer-footer-left { display: flex; gap: 4px; align-items: center; }
+.timer-display-links { display: flex; gap: 8px; align-items: center; }
+
+.timer-settings-btn {
+  width: 28px; height: 28px;
+  padding: 0; border: none; border-radius: 50%;
+  background: transparent; color: var(--color-text-faint);
+  font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: color .15s, background .15s;
+}
+.timer-settings-btn:hover:not(:disabled) {
+  color: var(--color-btn-text);
+  background: var(--color-settings-hover-bg);
+}
+.timer-settings-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+.timer-play-stop {
+  display: flex; align-items: center; justify-content: center;
+  width: 52px; height: 52px; border: none; border-radius: 50%;
+  background: var(--color-play-bg); color: var(--color-btn-text);
+  cursor: pointer;
+  transition: background .15s, color .15s, transform .1s;
+  font-size: 22px;
+}
+.timer-play-stop:hover  { background: var(--color-play-hover); color: var(--color-text-strong); transform: scale(1.08); }
+.timer-play-stop:active { background: var(--color-play-active); transform: scale(.96); }
+
+/* ─── Tab panel ─── */
+.app-tabs {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-panel);
+  border: 1px solid var(--color-panel-border);
+  border-radius: 6px;
+  overflow: hidden;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--color-dialog-divider);
+  background: var(--color-tab-bar-bg);
+}
+.tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+  text-align: center;
+}
+.tab:hover:not(:disabled) {
+  color: var(--color-text-strong);
+  background: var(--color-tab-hover-bg);
+}
+.tab.active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+  font-weight: 600;
+}
+.tab-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  padding: 10px;
+  min-height: 0;
+}
+
+/* ─── Timer panels ─── */
+.timer-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+.panel-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  border: 1px solid var(--color-scroll-border);
+  border-radius: 4px;
+  background: var(--color-scroll-bg);
+  padding: 10px;
+}
+.panel-form-group { display: flex; flex-direction: column; gap: 10px; }
+.panel-hit-fields { display: flex; flex-direction: column; gap: 8px; }
+
+/* ─── Form fields ─── */
+.form-field { display: flex; flex-direction: column; gap: 3px; }
+.form-field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+input[type='text'],
+input[type='number'],
+.int-input,
+.float-input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--color-input-border);
+  border-radius: 3px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color .15s;
+}
+input:focus,
+.int-input:focus,
+.float-input:focus,
+select:focus {
+  border-color: var(--color-input-focus);
+  box-shadow: 0 0 0 2px var(--color-input-focus-shadow);
+}
+input:disabled, select:disabled {
+  background: var(--color-input-disabled-bg);
+  color: var(--color-input-disabled-text);
+}
+
+select, .enum-select {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--color-input-border);
+  border-radius: 3px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  outline: none;
+  cursor: pointer;
+}
+
+.checkbox-label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+input[type='checkbox'] { width: 16px; height: 16px; cursor: pointer; }
+
+/* ─── Buttons ─── */
+.btn {
+  padding: 6px 16px;
+  border: 1px solid var(--color-btn-border);
+  border-radius: 3px;
+  background: var(--color-btn-bg);
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--color-btn-text);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) {
+  background: var(--color-btn-hover-bg);
+  border-color: var(--color-btn-hover-border);
+}
+.btn:active:not(:disabled) { background: var(--color-btn-active-bg); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--color-accent-bg);
+  color: #fff;
+  border-color: var(--color-accent-border);
+}
+.btn-primary:hover:not(:disabled) { background: var(--color-accent-hover); }
+
+.btn-icon {
+  width: 36px; height: 36px;
+  padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+
+.btn-success {
+  background: #4caf50; color: #fff; border-color: #43a047;
+  font-size: 18px; font-weight: 700;
+}
+.btn-success:hover:not(:disabled) { background: #43a047; }
+
+.btn-danger {
+  background: #d9534f; color: #fff; border-color: #c9302c;
+}
+.btn-danger:hover:not(:disabled) { background: #c9302c; }
+
+.btn-add { width: 100%; padding: 8px; }
+
+/* ─── Action bar ─── */
+.app-action-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.app-action-bar .btn-update { flex: 1; }
+
+/* ─── Status / version bar ─── */
+.app-status-bar {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--color-text-secondary);
+  padding: 2px 4px; min-height: 20px; flex-shrink: 0;
+  text-align: center;
+}
+.app-version {
+  font-size: 10px; color: var(--color-text-secondary);
+  opacity: .5; text-align: center; flex-shrink: 0;
+}
+
+/* ─── Custom panel ─── */
+.custom-scroll { padding: 10px; }
+.custom-phase-row {
+  display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;
+}
+.custom-phase-index {
+  font-size: 14px; font-weight: 600; color: var(--color-text-muted);
+  padding-top: 8px; min-width: 20px; text-align: right;
+}
+.custom-phase-group {
+  flex: 1;
+  border: 1px solid var(--color-custom-phase-border);
+  border-radius: 4px;
+  background: var(--color-custom-phase-bg);
+  padding: 10px;
+}
+.custom-phase-fields { display: flex; flex-direction: column; gap: 8px; }
+.custom-unit-row { display: flex; gap: 8px; align-items: center; }
+.custom-unit-row .enum-select { flex: 1; }
+
+/* ─── Settings dialog ─── */
+.dialog-overlay {
+  position: fixed; inset: 0;
+  background: var(--color-dialog-overlay);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+}
+.dialog {
+  background: var(--color-dialog-bg);
+  border: 1px solid var(--color-dialog-border);
+  border-radius: 6px;
+  width: min(480px, 90vw);
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,.2);
+}
+.dialog-title {
+  font-size: 16px; font-weight: 600;
+  padding: 12px 16px 8px;
+  color: var(--color-text-strong);
+}
+.dialog-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-dialog-divider);
+  padding: 0 12px;
+}
+.dialog-tab {
+  padding: 6px 16px;
+  border: none; background: transparent;
+  font-size: 13px; cursor: pointer;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+}
+.dialog-tab.active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+  font-weight: 600;
+}
+.dialog-content { flex: 1; overflow-y: auto; padding: 16px; }
+.settings-panel { display: flex; flex-direction: column; gap: 12px; }
+.dialog-buttons {
+  display: flex; gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-dialog-divider);
+  justify-content: flex-end;
+}
+.dialog-buttons .btn-icon { margin-right: auto; }
+
+/* ============================================================
+   EXTENSÕES — painel Treino de Ritmo
+   ============================================================ */
+
+/* Score / last-tap display dentro do timer-display */
+.training-readout {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  width: 100%;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-dialog-divider);
+  padding-top: 6px;
+}
+.training-readout-item {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+}
+.training-readout-value {
+  font-family: 'Consolas','Courier New', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-strong);
+}
+
+/* Tier badges (cor por tier) */
+.tier-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #fff;
+  min-width: 64px;
+  text-align: center;
+}
+.tier-hit       { background: var(--tier-hit); }
+.tier-near_hit  { background: var(--tier-near); }
+.tier-miss      { background: var(--tier-miss); color: #1a1a1a; }
+.tier-bad_miss  { background: var(--tier-bad); }
+.tier-ah_vei    { background: var(--tier-ah); }
+
+/* Sub-mode selector (A: cadência / B: RNG hit) */
+.subtab-bar {
+  display: flex;
+  gap: 4px;
+  background: var(--color-tab-bar-bg);
+  border: 1px solid var(--color-dialog-divider);
+  border-radius: 4px;
+  padding: 3px;
+}
+.subtab {
+  flex: 1;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all .15s;
+}
+.subtab:hover:not(.active) {
+  color: var(--color-text-strong);
+  background: var(--color-tab-hover-bg);
+}
+.subtab.active {
+  background: var(--color-accent-bg);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Beat dots (mostra 1..6 acendendo conforme cadência) */
+.beat-dots {
+  display: flex; gap: 8px; justify-content: center;
+  padding: 6px 0;
+}
+.beat-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--color-progress-bg);
+  border: 1px solid var(--color-panel-border);
+  transition: background .12s, transform .08s;
+}
+.beat-dot.active {
+  background: var(--color-accent-bg);
+  transform: scale(1.25);
+}
+.beat-dot.target {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+/* Histograma simples de inputs recentes */
+.history-list {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 8px;
+}
+.history-item {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--color-custom-phase-bg);
+  border: 1px solid var(--color-custom-phase-border);
+  font-size: 12px;
+  font-family: 'Consolas','Courier New', monospace;
+}
+
+/* ─── Responsivo ─── */
+@media (max-width: 540px) {
+  .app { padding: 8px; }
+  .app-container { max-width: none; gap: 8px; }
+  .timer-display { padding: 10px 10px 6px; }
+  .timer-current-phase { font-size: clamp(36px, 14vw, 56px); letter-spacing: 2px; }
+  .timer-meta { font-size: 12px; }
+  .timer-play-stop { width: 44px; height: 44px; font-size: 18px; }
+  .tab { padding: 6px 8px; font-size: 13px; }
+  .app-action-bar { gap: 6px; }
+  .btn { padding: 6px 12px; font-size: 13px; }
+  .btn-icon { width: 34px; height: 34px; font-size: 16px; }
+}
+@media (max-width: 360px) {
+  .app { padding: 4px; }
+  .timer-current-phase { font-size: 32px; }
+}

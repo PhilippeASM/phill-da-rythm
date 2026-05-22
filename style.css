@@ -1,0 +1,5 @@
+/* style.css — placeholder.
+   Será populado em turno seguinte com o CSS completo da v1.7
+   (cor gelo, layout dial, anéis, ghost trail, painéis Gen3/4/5/Custom). */
+body{font-family:system-ui;background:#eef3f3;color:#2b3a3f;margin:0}
+#root{padding:24px;max-width:980px;margin:0 auto}

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Treino de Ritmo v1.7</title>
+<link rel="stylesheet" href="src/style.css">
+<meta name="theme-color" content="#5b9bd5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Phill Rythm">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  /* Mobile/PWA: tap responsivo, sem zoom de double-tap nem realce/seleção ao tocar rápido */
+  html { touch-action: manipulation; }
+  body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+</style>
+</head>
+<body>
+<div id="app" class="app">
+  <div class="app-container">
+
+    <!-- ─── Display ─── -->
+    <section class="timer-display zone-normal" id="display">
+      <div class="timer-current-phase mono" id="phaseValue">--.---</div>
+
+      <div class="timer-progress-bar">
+        <div class="timer-progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="timer-meta">
+        <span class="timer-info-item"><span class="timer-info-label">Phase:</span><span class="mono" id="metaPhase">— / —</span></span>
+        <span class="timer-info-item"><span class="timer-info-label">Next:</span><span class="mono" id="metaNext">—</span></span>
+        <span class="timer-info-item"><span class="timer-info-label">Total:</span><span class="mono" id="metaTotal">—</span></span>
+        <span class="timer-info-item"><span class="timer-info-label">Mins Before:</span><span class="mono" id="metaMins">—</span></span>
+      </div>
+
+      <!-- Painel de leitura específico do Treino (oculto fora do modo Treino) -->
+      <div class="training-readout" id="trainingReadout" hidden>
+        <div class="training-readout-item">
+          <span class="timer-info-label">Score</span>
+          <span class="training-readout-value mono" id="rdScore">0</span>
+        </div>
+        <div class="training-readout-item">
+          <span class="timer-info-label">Δ (ms)</span>
+          <span class="training-readout-value mono" id="rdDelta">—</span>
+        </div>
+        <div class="training-readout-item">
+          <span class="timer-info-label">Tier</span>
+          <span id="rdTier"><span class="tier-badge" id="rdTierBadge">—</span></span>
+        </div>
+      </div>
+
+      <!-- Beat dots (só visível em Treino) -->
+      <div class="beat-dots" id="beatDots" hidden></div>
+
+      <div class="timer-display-footer">
+        <div class="timer-footer-left">
+          <button class="timer-settings-btn" id="btnSettings" title="Settings" aria-label="Settings">⚙</button>
+        </div>
+        <button class="timer-play-stop" id="btnPlay" title="Start / Stop (espaço)" aria-label="Start/Stop">▶</button>
+        <div class="timer-display-links">
+          <a class="timer-display-link" href="https://github.com/DasAmpharos/EonTimer" target="_blank" rel="noopener" title="EonTimer (inspiração)">⌧</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Tabs ─── -->
+    <section class="app-tabs">
+      <div class="tab-bar" id="tabBar" role="tablist">
+        <button class="tab active" data-tab="training" role="tab" aria-selected="true">Treino</button>
+        <button class="tab" data-tab="gen5" role="tab">Gen 5</button>
+        <button class="tab" data-tab="gen4" role="tab">Gen 4</button>
+        <button class="tab" data-tab="gen3" role="tab">Gen 3</button>
+        <button class="tab" data-tab="custom" role="tab">Custom</button>
+      </div>
+
+      <div class="tab-content">
+        <!-- Os painéis são montados via JS em #panels -->
+        <div id="panels" style="flex:1; display:flex; min-height:0;"></div>
+      </div>
+    </section>
+
+    <!-- ─── Action bar ─── -->
+    <div class="app-action-bar">
+      <button class="btn btn-icon" id="btnReset" title="Reset">↺</button>
+      <button class="btn" id="btnMic" title="POC A1: liga captura de microfone e loga onsets no console (F12)">Mic</button>
+      <button class="btn btn-update btn-primary" id="btnUpdate">Update</button>
+    </div>
+
+    <!-- ─── Status / version ─── -->
+    <div class="app-status-bar" id="status">Ready</div>
+    <div class="app-version" id="version">v1.7 — Treino de Ritmo</div>
+
+  </div>
+</div>
+
+<!-- Close-session confirm dialog (Esc / B) -->
+<div class="dialog-overlay" id="closeConfirmOverlay" hidden>
+  <div class="dialog" role="dialog" aria-labelledby="closeConfirmTitle" aria-modal="true" style="max-width:460px">
+    <div class="dialog-title" id="closeConfirmTitle">Fechar sessão?</div>
+    <div class="dialog-content">
+      <p style="line-height:1.45">Tem certeza que deseja fechar a sessão?<br>
+      <span style="opacity:.7;font-size:.9em">Os dados e configurações do treino atual serão perdidos.</span></p>
+      <p style="opacity:.6;font-size:.82em;margin-top:10px">Teclado: <strong>Enter</strong> confirma · <strong>Esc</strong> cancela &nbsp;·&nbsp; Controle: <strong>A</strong> confirma · <strong>B</strong> cancela</p>
+    </div>
+    <div class="dialog-buttons">
+      <button class="btn" id="closeConfirmNo">Não</button>
+      <button class="btn btn-primary" id="closeConfirmYes">Sim, fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Results dialog (overlay) — aparece ao fim de cada sessão de Treino -->
+<div class="dialog-overlay" id="resultsOverlay" hidden>
+  <div class="dialog" role="dialog" aria-labelledby="resultsTitle" aria-modal="true" style="max-width:540px">
+    <div class="dialog-title" id="resultsTitle">Resultado da Sessão</div>
+    <div class="dialog-content" id="resultsContent"></div>
+    <div class="dialog-buttons">
+      <button class="btn" id="resultsClose">Fechar</button>
+      <button class="btn btn-primary" id="resultsAgain">Treinar de novo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings dialog (overlay) -->
+<div class="dialog-overlay" id="settingsOverlay" hidden>
+  <div class="dialog" role="dialog" aria-labelledby="settingsTitle" aria-modal="true">
+    <div class="dialog-title" id="settingsTitle">Settings</div>
+    <div class="dialog-tabs" id="settingsTabs">
+      <button class="dialog-tab active" data-stab="action">Action</button>
+      <button class="dialog-tab" data-stab="timer">Timer</button>
+    </div>
+    <div class="dialog-content" id="settingsContent"></div>
+    <div class="dialog-buttons">
+      <button class="btn btn-icon" id="settingsReset" title="Reset to defaults">↺</button>
+      <button class="btn" id="settingsCancel">Cancel</button>
+      <button class="btn btn-primary" id="settingsOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="src/app.js?v=20260515e"></script>
+<script>
+  // PWA: registra o service worker (offline + instalável). Falha silenciosa fora de https/localhost.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+</script>
+</body>
+</html>
