@@ -2,7 +2,7 @@
 // Estratégia: cache-first com atualização em background (stale-while-revalidate),
 // só pra GETs do próprio origin. Não precisa enumerar arquivos (cacheia conforme usa) —
 // robusto pra app estático sem build. Bump CACHE pra forçar limpeza em update.
-const CACHE = 'phill-rythm-v1';
+const CACHE = 'phill-rythm-v3';
 
 self.addEventListener('install', () => self.skipWaiting());
 

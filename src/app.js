@@ -105,6 +105,11 @@ const TIMER_DEFAULTS = Object.freeze({
   // offset atual. Default 0 (= sem compensation). Range típico do Pro Controller
   // via USB no Windows: 10–40ms; via Bluetooth: 20–60ms.
   controllerOffsetMs: 0,
+  // v1.13: offset fixo pro input via touch/teclado (análogo ao controllerOffsetMs).
+  // Absorve o resíduo fixo: latência do digitizer touch + sub-compensação da
+  // outputLatency no iOS Safari (que costuma reportar outputLatency=0). Positivo =
+  // adianta o tap N ms. Calibrar pelo Δ médio das stats (no iOS tende a ser positivo).
+  touchOffsetMs: 0,
 });
 const TIMER_LS_KEY = 'phill_da_rythm_timer';
 
@@ -812,6 +817,18 @@ function bindControls() {
 //   Esc       → cancela (fica na sessão pausada)
 //   Space     → ignorado
 function bindKeyboard() {
+  // iOS: o AudioContext do Safari nasce 'suspended' e só liga DENTRO de um gesto do
+  // usuário. Destrava no 1º toque/tecla (resume + beep silencioso) e depois se remove.
+  const _unlockAudio = () => {
+    try { ensureAudio(); beep(null, { peak: 0.0001, decay: 0.01 }); } catch (e) {}
+    window.removeEventListener('pointerdown', _unlockAudio, true);
+    window.removeEventListener('keydown', _unlockAudio, true);
+    window.removeEventListener('touchend', _unlockAudio, true);
+  };
+  window.addEventListener('pointerdown', _unlockAudio, true);
+  window.addEventListener('keydown', _unlockAudio, true);
+  window.addEventListener('touchend', _unlockAudio, true);
+
   window.addEventListener('keydown', (e) => {
     const tag = (e.target?.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
@@ -834,8 +851,8 @@ function bindKeyboard() {
       toggleRun();
     } else if (e.code === 'Space') {
       e.preventDefault();
-      // Tap só vale se rodando e não pausado.
-      if (state.running && !state.paused) onTap();
+      // Tap só vale se rodando e não pausado. v1.13: back-data via event.timeStamp.
+      if (state.running && !state.paused) onTap(_eventToAudioTime(e));
     } else if (e.code === 'Escape') {
       e.preventDefault();
       if (state.running) closeSession();
@@ -849,7 +866,8 @@ function bindKeyboard() {
     if (e.pointerType !== 'touch') return;
     if (isCloseConfirmOpen()) return;
     if (e.target.closest('button, a, input, select, [role="tab"], .dialog, .dialog-overlay')) return;
-    if (state.running && !state.paused) { e.preventDefault(); onTap(); }
+    // v1.13: back-data o instante do toque via event.timeStamp (mata o jitter de dispatch).
+    if (state.running && !state.paused) { e.preventDefault(); onTap(_eventToAudioTime(e)); }
   }, { passive: false });
 }
 
@@ -1852,10 +1870,29 @@ function _setProgressZone(name) {
   bar.classList.add('zone-' + name);
 }
 
+// v1.13: converte o instante de um evento (pointerdown/keydown) pro clock do
+// AudioContext via event.timeStamp (gravado QUANDO o evento ocorreu, mesma base de
+// performance.now()) em vez de ler actxNow() no momento em que o handler roda. Remove
+// o jitter VARIÁVEL de dispatch (event-loop sob carga de animação) que fazia o Δ
+// "oscilar" mesmo com taps fisicamente consistentes. O resíduo FIXO (digitizer touch
+// + sub-compensação da outputLatency no iOS) é calibrado via touchOffsetMs.
+function _eventToAudioTime(e) {
+  const base = actxNow();
+  const offSec = ((state.timer && state.timer.touchOffsetMs) || 0) / 1000;
+  const ts = (e && typeof e.timeStamp === 'number') ? e.timeStamp : NaN;
+  if (Number.isFinite(ts) && ts > 0) {
+    const ageMs = performance.now() - ts;
+    // Guard: evento deve estar no passado recente (0–1000ms). Fora disso (epoch
+    // diferente / evento sintético / relógio bizarro) → fallback pro clock atual.
+    if (ageMs >= 0 && ageMs < 1000) return base - ageMs / 1000 - offSec;
+  }
+  return base - offSec;
+}
+
 // ─── Tap (entrada do usuário) ───────────────────────────────
-// `tNowOverride`: tempo do tap (clock do AudioContext, em segundos). Quando vem do
-// teclado (keydown), o handler chama onTap() sem arg e a gente lê actxNow() na hora.
-// Quando vem do gamepad, o controller.js já calcula o instante exato do rising-edge
+// `tNowOverride`: tempo do tap (clock do AudioContext, em segundos). Vindo de
+// touch/teclado, o handler passa _eventToAudioTime(e) (back-datado via event.timeStamp).
+// Vindo do gamepad, o controller.js já calcula o instante exato do rising-edge
 // (back-datado pelo gp.timestamp) e passa pra cá -- evita 1 frame de polling jitter.
 function onTap(tNowOverride) {
   const t = state.training;
@@ -2425,6 +2462,19 @@ function buildTimerTab() {
     'Calibração: rode 20 taps em ritmo perfeito, anote o Δ médio que aparece, soma ao offset. ' +
     'Default 0. Range típico: USB 10–40ms, Bluetooth 20–60ms. ' +
     'Pra diagnóstico fino: F12 + window.gpDebug() liga log per-press com actxRaw + audioLatency.'));
+
+  // v1.13: offset de input pra touch/teclado (análogo ao do controller). Junto com
+  // a captura via event.timeStamp, fecha o problema de "delay/oscilação" no tap touch.
+  root.appendChild(sectionTitle('Offset de input — touch/teclado (ms)'));
+  root.appendChild(_field('Offset',
+    _intInput(tm.touchOffsetMs || 0, v => {
+      tm.touchOffsetMs = v ?? 0;
+      saveTimerSettings();
+    }, { min: -200, max: 200, step: 1 }),
+    'Compensação fixa pro tap via tela/teclado (separada do offset do controller). ' +
+    'Positivo = "input chegou atrasado, adianta N ms" → desloca Δ pra menos. ' +
+    'Calibração: rode ~20 taps em ritmo perfeito, anote o Δ médio das stats, soma ao offset. ' +
+    'Default 0. No iPhone/iPad o iOS reporta outputLatency=0, então costuma precisar de um valor positivo.'));
 
   return root;
 }

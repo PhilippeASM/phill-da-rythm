@@ -1,2 +1,4 @@
 .DS_Store
 Thumbs.db
+cloudflared.exe
+*.log
