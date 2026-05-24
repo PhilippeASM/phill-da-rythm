@@ -27,12 +27,16 @@ export function ensureAudio() {
     if (!Ctor) throw new Error('Web Audio API não disponível');
     _actx = new Ctor();
   }
-  if (_actx.state === 'suspended') _actx.resume();
+  // resume cobre 'suspended' E o estado iOS-específico 'interrupted' (pós-background).
+  if (_actx.state !== 'running' && _actx.state !== 'closed') {
+    try { _actx.resume(); } catch (e) {}
+  }
   return _actx;
 }
 
 export function getCtx() { return _actx; }
 export function now()    { return _actx ? _actx.currentTime : 0; }
+export function audioState() { return _actx ? _actx.state : 'none'; }
 
 // Carrega e decodifica todos os 4 sons EonTimer. Idempotente: chamadas
 // múltiplas retornam a mesma Promise. Resolve com Set de nomes carregados
@@ -125,4 +129,20 @@ export function beep(when, opts = {}) {
 // Conveniência: agenda 'count' pulsos de um som a partir de 'from', a cada 'period' s.
 export function schedulePulses(from, period, count, name = 'beep', opts = {}) {
   for (let i = 0; i < count; i++) play(name, from + i * period, opts);
+}
+
+// v1.14: recria o AudioContext do ZERO (+ recarrega os buffers no novo contexto).
+// Necessário no iOS: ao voltar de background o contexto pode ficar 'interrupted'/zumbi
+// e nem resume() revive — só recriar (= o que o usuário fazia fechando/reabrindo o app).
+// AudioBuffers são presos ao contexto, então precisam ser re-decodificados no novo.
+export async function reinitAudio() {
+  const old = _actx;
+  _actx = null;
+  _buffers.clear();
+  _loadPromise = null;
+  _scheduled.clear();
+  try { if (old) await old.close(); } catch (e) {}
+  ensureAudio();
+  try { await loadSounds(); } catch (e) {}
+  return _actx ? _actx.state : 'none';
 }

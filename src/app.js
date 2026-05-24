@@ -6,7 +6,7 @@
    - Tecla espaço: input + start/stop
    ============================================================ */
 
-import { ensureAudio, loadSounds, play, beep, Sound, now as actxNow, cancelAllScheduled, getCtx } from './audio.js?v=20260515c';
+import { ensureAudio, loadSounds, play, beep, Sound, now as actxNow, cancelAllScheduled, getCtx, reinitAudio } from './audio.js?v=20260524a';
 import { tierOf, tierLabel, scoreFor, setTiers, TIER_PRESETS, TIERS } from './timing.js?v=20260514a';
 import { initModeSwitcher } from './ui/mode-switcher.js?v=20260513b';
 import { initController } from './controller.js?v=20260515b';
@@ -817,17 +817,41 @@ function bindControls() {
 //   Esc       → cancela (fica na sessão pausada)
 //   Space     → ignorado
 function bindKeyboard() {
-  // iOS: o AudioContext do Safari nasce 'suspended' e só liga DENTRO de um gesto do
-  // usuário. Destrava no 1º toque/tecla (resume + beep silencioso) e depois se remove.
-  const _unlockAudio = () => {
-    try { ensureAudio(); beep(null, { peak: 0.0001, decay: 0.01 }); } catch (e) {}
-    window.removeEventListener('pointerdown', _unlockAudio, true);
-    window.removeEventListener('keydown', _unlockAudio, true);
-    window.removeEventListener('touchend', _unlockAudio, true);
+  // v1.14: robustez de áudio no iOS.
+  // (a) Gesto PERSISTENTE (não one-shot): toda interação garante o AudioContext
+  //     rodando — re-resume depois de qualquer suspensão. O beep silencioso de
+  //     unlock só dispara no 1º gesto.
+  // (b) Ao VOLTAR do background, o iOS deixa o contexto 'interrupted'/zumbi e
+  //     resume() não revive → recria do zero (reinitAudio), equivalente a fechar/
+  //     reabrir o app que o usuário fazia na mão.
+  // (c) Pausa a sessão ao SAIR (o áudio agendado morre em background de qualquer
+  //     forma) pra o schedule não ficar preso no clock do contexto morto.
+  let _firstGesture = true;
+  const _onGesture = () => {
+    try {
+      ensureAudio();
+      if (_firstGesture) { _firstGesture = false; beep(null, { peak: 0.0001, decay: 0.01 }); }
+    } catch (e) {}
   };
-  window.addEventListener('pointerdown', _unlockAudio, true);
-  window.addEventListener('keydown', _unlockAudio, true);
-  window.addEventListener('touchend', _unlockAudio, true);
+  window.addEventListener('pointerdown', _onGesture, true);
+  window.addEventListener('keydown', _onGesture, true);
+  window.addEventListener('touchend', _onGesture, true);
+
+  let _audioWasHidden = false;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      _audioWasHidden = true;
+      if (state.running && !state.paused) { try { pauseRound(); } catch (e) {} }
+      return;
+    }
+    if (_audioWasHidden) {
+      _audioWasHidden = false;
+      reinitAudio().catch(() => {});   // recria contexto + buffers (resume não basta no iOS)
+    } else {
+      try { ensureAudio(); } catch (e) {}
+    }
+  });
+  window.addEventListener('pageshow', () => { try { ensureAudio(); } catch (e) {} });
 
   window.addEventListener('keydown', (e) => {
     const tag = (e.target?.tagName || '').toLowerCase();
